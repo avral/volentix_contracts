@@ -56,18 +56,21 @@ void vtxdistribut::setrewardrule( uint32_t reward_id,
 void vtxdistribut::uptime( name account, const std::vector<uint32_t> &job_ids ) {
   require_auth( account );
   checkblaclist( account );
-
-  auto producer_job_ids = vdexdposvote::get_jobs( voting_contract, account );
-  //DIFFER CONTRACT
+  // TODO: remove hardcode
   time_point_sec tps = current_time_point();
   uint32_t now = tps.sec_since_epoch();
+  reward(account, 0, now);
+  // auto producer_job_ids = vdexdposvote::get_jobs( voting_contract, account );
+  // //DIFFER CONTRACT
+  // time_point_sec tps = current_time_point();
+  // uint32_t now = tps.sec_since_epoch();
 
-    for (auto const &job_id : producer_job_ids) {
-        // check whether job_id on registered job_ids
-        if ( std::find(producer_job_ids.begin(), producer_job_ids.end(), job_id) != producer_job_ids.end() ) {
-            reward(account, job_id, now);
-        }
-    }
+  //   for (auto const &job_id : producer_job_ids) {
+  //       // check whether job_id on registered job_ids
+  //       if ( std::find(producer_job_ids.begin(), producer_job_ids.end(), job_id) != producer_job_ids.end() ) {
+  //           reward(account, job_id, now);
+  //       }
+  //   }
 }
 
 void vtxdistribut::reward(name account, uint32_t job_id, uint32_t timestamp) {
