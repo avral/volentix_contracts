@@ -76,7 +76,7 @@ void vtxdistribut::uptime( name account, const std::vector<uint32_t> &job_ids ) 
 void vtxdistribut::reward(name account, uint32_t job_id, uint32_t timestamp) {
   auto reward_iter = rewards.find(job_id);
   check( reward_iter != rewards.end(), "unknown job_id" );
-  uint32_t current_period = reward_iter->reward_period / one_day;
+  uint32_t current_period = timestamp / reward_iter->reward_period;
 
   uptime_index uptimes( get_self(), account.value );
   auto uptime_iter = uptimes.find(job_id);
@@ -95,18 +95,21 @@ void vtxdistribut::reward(name account, uint32_t job_id, uint32_t timestamp) {
   }
 
   // send reward for prev period at start of current period
-  if (current_period > uptime_iter->period_num ) {
+  if (current_period > uptime_iter->period_num) {
     double votes = vdexdposvote::get_votes(voting_contract, account);
     int rank = vdexdposvote::get_rank(voting_contract, account);
     asset reward(0, vtx_symbol);
     string memo;
-    //calcilate reward amount
-    if ( rank <= reward_iter->rank_threshold ) {
-        reward = reward_iter->reward_amount;
-        memo = reward_iter->memo;
-    } else if (rank <= reward_iter->standby_rank_threshold ) {
-        reward = reward_iter->standby_amount;
-        memo = reward_iter->standby_memo;
+    // check wether uptimes treshold reached
+    if (uptime_iter->count >= reward_iter->uptime_threshold) {
+      //calcilate reward amount
+      if ( rank <= reward_iter->rank_threshold ) {
+          reward = reward_iter->reward_amount;
+          memo = reward_iter->memo;
+      } else if (rank <= reward_iter->standby_rank_threshold ) {
+          reward = reward_iter->standby_amount;
+          memo = reward_iter->standby_memo;
+      }
     }
 
     if ( reward.amount > 0 ) {
@@ -118,9 +121,15 @@ void vtxdistribut::reward(name account, uint32_t job_id, uint32_t timestamp) {
       ).send();      
     }
 
+    uptimes.modify(uptime_iter, account, [&] ( auto& row ) {
+      row.period_num = current_period;
+      row.count = 1;
+      row.last_timestamp = timestamp;
+    });
+
     return;
 
-  } 
+  }
   
   // update uptime count and timestamp
   check(timestamp > uptime_iter->last_timestamp + reward_iter->uptime_timeout, "too often uptime");
