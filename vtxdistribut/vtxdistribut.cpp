@@ -100,6 +100,8 @@ void vtxdistribut::reward(name account, uint32_t job_id, uint32_t timestamp) {
       row.count = 1;
       row.last_timestamp = timestamp;
     });
+
+    return;
   }
 
   // send reward for prev period at start of current period
