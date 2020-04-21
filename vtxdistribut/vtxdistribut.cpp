@@ -81,7 +81,7 @@ void vtxdistribut::reward(name account, uint32_t job_id, uint32_t timestamp) {
   uptime_index uptimes( get_self(), account.value );
   auto uptime_iter = uptimes.find(job_id);
   
-  if ( uptime_iter == uptimes.end() ) {
+  if (uptime_iter == uptimes.end()) { 
     // init uptime for account and job_id
     uptimes.emplace(account, [&] ( auto& row ) {
       row.job_id = job_id;
@@ -92,6 +92,14 @@ void vtxdistribut::reward(name account, uint32_t job_id, uint32_t timestamp) {
 
     return;
 
+  }
+
+  if (current_period < uptime_iter->period_num) { // happens only after increasing reward_period
+    uptimes.modify(uptime_iter, account, [&] ( auto& row ) {
+      row.period_num = current_period;
+      row.count = 1;
+      row.last_timestamp = timestamp;
+    });
   }
 
   // send reward for prev period at start of current period
